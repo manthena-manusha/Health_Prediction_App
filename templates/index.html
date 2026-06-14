@@ -67,6 +67,8 @@ Save Patient
 <th>Haemoglobin</th>
 <th>Cholesterol</th>
 <th>Result</th>
+<th>Edit</th>
+<th>Delete</th>
 </tr>
 
 {% for patient in patients %}
@@ -80,6 +82,20 @@ Save Patient
 <td>{{ patient[5] }}</td>
 <td>{{ patient[6] }}</td>
 <td>{{ patient[7] }}</td>
+
+<td>
+    <a href="/edit/{{ patient[0] }}">
+        Edit
+    </a>
+</td>
+
+<td>
+    <a href="/delete/{{ patient[0] }}"
+       onclick="return confirm('Delete this patient?')">
+        Delete
+    </a>
+</td>
+
 </tr>
 
 {% endfor %}
