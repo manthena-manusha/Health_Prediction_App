@@ -1,80 +1,65 @@
 from flask import Flask, render_template, request, redirect
-import oracledb
+import sqlite3
+import pickle
 
 app = Flask(__name__)
 
-def get_connection():
-    return oracledb.connect(
-        user="system",
-        password="YOUR_PASSWORD",
-        dsn="localhost/XEPDB1"
-    )
+with open("model.pkl","rb") as file:
+    model = pickle.load(file)
 
-@app.route('/')
+@app.route("/")
 def index():
 
-    conn = get_connection()
+    conn = sqlite3.connect("health.db")
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT patient_id,
-               full_name,
-               dob,
-               email,
-               glucose,
-               haemoglobin,
-               cholesterol,
-               remarks
-        FROM patients
-        ORDER BY patient_id
-    """)
+    cursor.execute("SELECT * FROM patients")
 
     patients = cursor.fetchall()
 
-    cursor.close()
     conn.close()
 
     return render_template(
-        'index.html',
+        "index.html",
         patients=patients
     )
 
-@app.route('/add', methods=['POST'])
+
+@app.route("/add", methods=["POST"])
 def add_patient():
 
-    full_name = request.form['full_name']
-    dob = request.form['dob']
-    email = request.form['email']
-    glucose = request.form['glucose']
-    haemoglobin = request.form['haemoglobin']
-    cholesterol = request.form['cholesterol']
+    full_name = request.form["full_name"]
+    dob = request.form["dob"]
+    email = request.form["email"]
 
-    remarks = "Prediction Pending"
+    glucose = float(request.form["glucose"])
+    haemoglobin = float(request.form["haemoglobin"])
+    cholesterol = float(request.form["cholesterol"])
 
-    conn = get_connection()
+    prediction = model.predict(
+        [[glucose, haemoglobin, cholesterol]]
+    )
+
+    if prediction[0] == 1:
+        remarks = "High Risk"
+    else:
+        remarks = "Low Risk"
+
+    conn = sqlite3.connect("health.db")
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO patients
-        (
-            full_name,
-            dob,
-            email,
-            glucose,
-            haemoglobin,
-            cholesterol,
-            remarks
-        )
-        VALUES
-        (
-            :1,
-            TO_DATE(:2,'YYYY-MM-DD'),
-            :3,
-            :4,
-            :5,
-            :6,
-            :7
-        )
+    INSERT INTO patients
+    (
+        full_name,
+        dob,
+        email,
+        glucose,
+        haemoglobin,
+        cholesterol,
+        remarks
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     """,
     (
         full_name,
@@ -87,11 +72,10 @@ def add_patient():
     ))
 
     conn.commit()
-
-    cursor.close()
     conn.close()
 
-    return redirect('/')
+    return redirect("/")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)

@@ -1,18 +1,23 @@
-import oracledb
+import sqlite3
 
-conn = oracledb.connect(
-    user="system",
-    password="YOUR_PASSWORD",
-    dsn="localhost/XEPDB1"
-)
+conn = sqlite3.connect("health.db")
 
 cursor = conn.cursor()
 
 cursor.execute("""
-SELECT * FROM patients
+CREATE TABLE IF NOT EXISTS patients(
+    patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT,
+    dob TEXT,
+    email TEXT,
+    glucose REAL,
+    haemoglobin REAL,
+    cholesterol REAL,
+    remarks TEXT
+)
 """)
 
-for row in cursor:
-    print(row)
-
+conn.commit()
 conn.close()
+
+print("Database Created Successfully")
